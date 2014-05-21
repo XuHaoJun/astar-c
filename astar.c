@@ -42,7 +42,6 @@ typedef struct Map {
   Grid **grids;
   bool (*inMapP)(struct Map *map, Point pos);
   Grid *(*gridth)(struct Map *map, Point pos);
-  /* GridArray *(*nearbyGrids)(struct Map *map, Point pos); */
   GridList *(*nearbyGrids)(struct Map *map, Point pos);
   PathList *(*astarFindPath)(Point srcPos, Point destPos);
 } Map;
@@ -140,45 +139,6 @@ GridList *nearbyGrids(Map *map, Point pos) {
   }
   return glist;
 }
-
-/* GridArray *nearbyGrids(Map *map, Point pos) { */
-/*   int32_t directions[8][2] = { */
-/*       {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}};
- */
-/*   if (!map->inMapP(map, pos)) { */
-/*     return NULL; */
-/*   } */
-/*   int i; */
-/*   Point curPos; */
-/*   int32_t size = 0; */
-/*   bool direIndex[8]; */
-/*   for (i = 0; i < 8; i++) { */
-/*     direIndex[i] = false; */
-/*   } */
-/*   for (i = 0; i < 8; i++) { */
-/*     curPos.x = pos.x + directions[i][0]; */
-/*     curPos.y = pos.y + directions[i][1]; */
-/*     if (map->inMapP(map, curPos)) { */
-/*       size++; */
-/*       direIndex[i] = true; */
-/*     } */
-/*   } */
-/*   if (size >= 1) { */
-/*     Grid *grids; */
-/*     grids = (Grid *)malloc(sizeof(Grid) * size); */
-/*     int gridI = 0; */
-/*     for (i = 0; i < 8; i++) { */
-/*       if (direIndex[i]) { */
-/*         curPos.x = pos.x + directions[i][0]; */
-/*         curPos.y = pos.y + directions[i][1]; */
-/*         grids[gridI] = *map->gridth(map, curPos); */
-/*         gridI++; */
-/*       } */
-/*     } */
-/*     return &(GridArray) {size, grids}; */
-/*   } */
-/*   return NULL; */
-/* } */
 
 Map newMap(int32_t width, int32_t height) {
   Grid **grids = malloc(sizeof(Grid *) * height);
