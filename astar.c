@@ -225,17 +225,23 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
     GridList *prevGlist;
     prevGlist = tmpGlist;
     while (tmpGlist != NULL) {  // reject unneccessary grid
-      if (findNodeByPos(closeList, tmpGlist->grid->position) ||
-          tmpGlist->grid->isBeWalkable == false) {
+      if ((findNodeByPos(closeList, tmpGlist->grid->position) ||
+           tmpGlist->grid->isBeWalkable == false) &&
+          tmpGlist == nbyGrids) {
+        nbyGrids = NULL;
+        break;
+      } else if (findNodeByPos(closeList, tmpGlist->grid->position) ||
+                 tmpGlist->grid->isBeWalkable == false) {
         prevGlist->next = tmpGlist->next;
       }
       prevGlist = tmpGlist;
       tmpGlist = tmpGlist->next;
     }
     printf("wiwi look here 2 \n");
-    if (nbyGrids->next == NULL && nbyGrids->grid == NULL) {
+    if (nbyGrids == NULL || nbyGrids->next == NULL || nbyGrids->grid == NULL) {
       break;
     }
+    printf("wiwi look here 3 \n");
     tmpGlist = nbyGrids;
     while (tmpGlist != NULL) {  // each nearbyGrids
       pos = tmpGlist->grid->position;
@@ -470,8 +476,6 @@ int main() {
   guard.move(&guard, path[2]);
   map.gridth(&map, path[2])->isBeWalkable = false;
 
-  printf("x: %d, y: %d\n", map.grids[2][3].position.x,
-         map.grids[2][3].position.y);
   GridList *grids = map.nearbyGrids(&map, (Point) {9, 9});
   GridList *cur = grids;
   int size = 0;
@@ -481,6 +485,6 @@ int main() {
     size++;
     cur = cur->next;
   }
-  printf("size %d\n", size);
+  printf("nb grids size %d\n", size);
   return 0;
 }
