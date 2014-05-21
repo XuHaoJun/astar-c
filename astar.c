@@ -99,23 +99,26 @@ int32_t astarH(Point srcPos, Point destPos) {
 }
 
 AstarList *appendAstarNode(AstarList *alist, AstarNode *anode) {
-  AstarList *newAlist = newAstarList(anode);
   if (alist == NULL) {
-    alist = newAlist;
+    alist = newAstarList(anode);
     return alist;
   } else if (alist->node == NULL) {
     alist->node = anode;
     return alist;
+  } else if (alist->next == NULL) {
+    alist->next = newAstarList(anode);
+    return alist;
   } else {
     AstarList *tmp = alist;
-    while (tmp->next != NULL) {
+    AstarList *prev;
+    while (tmp) {
+      prev = tmp;
       tmp = tmp->next;
     }
-    tmp->next = newAlist;
+    prev->next = newAstarList(anode);
     return alist;
   }
-  free(newAlist);
-  return NULL;
+  return alist;
 }
 
 AstarNode *minFvalAstarNode(AstarList *alist) {
@@ -187,8 +190,8 @@ PathList *reversePathList(PathList *plist) {
 PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
   if (equalPoint(srcPos, destPos) || map->gridth(map, destPos) == NULL ||
       map->gridth(map, srcPos) == NULL ||
-      !map->gridth(map, srcPos)->isBeWalkable ||
-      !map->gridth(map, destPos)->isBeWalkable) {
+      map->gridth(map, srcPos)->isBeWalkable == false ||
+      map->gridth(map, destPos)->isBeWalkable == false) {
     return NULL;
   }
   AstarList *openList, *closeList;
@@ -199,7 +202,9 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
   Point pos;
   AstarNode *foundNode;
   openList = newAstarList(srcNode);
-  closeList = malloc(sizeof(AstarList));
+  closeList = (AstarList *)malloc(sizeof(AstarList));
+  closeList->next = NULL;
+  closeList->node = NULL;
   tmpGlist = NULL;
   minNode = NULL;
   f = 0;
@@ -210,7 +215,8 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
     minNode = minFvalAstarNode(openList);
     printf("minNode pos %d, %d, f: %d\n", minNode->pos.x, minNode->pos.y,
            minNode->f);
-    appendAstarNode(closeList, minNode);
+    closeList = appendAstarNode(closeList, minNode);
+    printf("wiwi look here 1 \n");
     /* clearAstarList(openList); */
     openList->node = NULL;
     openList->next = NULL;
@@ -218,15 +224,18 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
     tmpGlist = nbyGrids;
     GridList *prevGlist;
     prevGlist = tmpGlist;
-    while (tmpGlist != NULL) {
+    while (tmpGlist != NULL) {  // reject unneccessary grid
       if (findNodeByPos(closeList, tmpGlist->grid->position) ||
-          !(tmpGlist->grid->isBeWalkable)) {
+          tmpGlist->grid->isBeWalkable == false) {
         prevGlist->next = tmpGlist->next;
       }
       prevGlist = tmpGlist;
       tmpGlist = tmpGlist->next;
     }
-    /* printf("%d\n", nearbyGrids->next->next->grid->position.y); */
+    printf("wiwi look here 2 \n");
+    if (nbyGrids->next == NULL && nbyGrids->grid == NULL) {
+      break;
+    }
     tmpGlist = nbyGrids;
     while (tmpGlist != NULL) {  // each nearbyGrids
       pos = tmpGlist->grid->position;
@@ -241,7 +250,7 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
           foundNode->f = g + h;
         }
       } else {
-        appendAstarNode(openList, newAstarNode(pos, f, g, minNode));
+        openList = appendAstarNode(openList, newAstarNode(pos, f, g, minNode));
       }
       // next nearbyGrid
       tmpGlist = tmpGlist->next;
@@ -253,13 +262,12 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
     printf("Keep? %d\n",
            !(equalPoint(minNode->pos, destPos) || openList->node == NULL));
   } while (!(equalPoint(minNode->pos, destPos) || openList->node == NULL));
+  printf("collect path\n");
   AstarNode *tmpNode = minNode;
-  /* PathList *path = malloc(sizeof(PathList)); */
   PathList *path = malloc(sizeof(PathList));
   PathList *tmpPath;
   tmpPath = path;
   while (tmpNode != srcNode) {
-    printf("collect path\n");
     tmpPath->pos = tmpNode->pos;
     tmpPath->next = (PathList *)malloc(sizeof(PathList));
     tmpPath = tmpPath->next;
@@ -379,16 +387,22 @@ bool move(Guard *guard, Point destPos) {
   PathList *path, *tmpPath;
   Point curPos;
   path = curMap->astarFindPath(curMap, guard->position, destPos);
-  tmpPath = path;
-  while (tmpPath) {
-    curPos = tmpPath->pos;
-    guard->position = curPos;
-    printf("%s move to ", guard->name);
-    printf("x: %d, y: %d\n", curPos.x, curPos.y);
-    tmpPath = tmpPath->next;
+  if (path != NULL) {
+    tmpPath = path;
+    while (tmpPath) {
+      curPos = tmpPath->pos;
+      guard->position = curPos;
+      printf("%s move to ", guard->name);
+      printf("x: %d, y: %d\n", curPos.x, curPos.y);
+      tmpPath = tmpPath->next;
+    }
+    return true;
+  } else {
+    printf("%s can't move to %d, %d\n", guard->name, destPos.x, destPos.y);
+    free(path);
+    return false;
   }
-  free(path);
-  return true;
+  return false;
 }
 
 Guard newGuard(char *name, Point position) {
@@ -433,18 +447,19 @@ int main() {
   }
   free(rectWalls);
 
-  PathList *plist = map.astarFindPath(&map, (Point) {0, 0}, (Point) {4, 4});
-
-  PathList *tmpPlist = plist;
-  while (tmpPlist) {
-    printf("Path %d, %d\n", tmpPlist->pos.x, tmpPlist->pos.y);
-    tmpPlist = tmpPlist->next;
+  printf("start first astar path finding\n");
+  PathList *plist = map.astarFindPath(&map, (Point) {1, 1}, (Point) {3, 3});
+  if (plist != NULL) {
+    PathList *tmpPlist = plist;
+    while (tmpPlist) {
+      printf("Path %d, %d\n", tmpPlist->pos.x, tmpPlist->pos.y);
+      tmpPlist = tmpPlist->next;
+    }
+  } else {
+    printf("plist is NULL\n");
   }
 
-  /* int32_t pathSize = (sizeof(path) / sizeof(Point)); */
-  /* for (i = 0; i < pathSize; i++) { */
-  /*   guard.move(&guard, path[i]); */
-  /* } */
+  printf("wiwi start moving\n");
   Point path[] = {{10, 10}, {5, 5}, {15, 15}};
   map.gridth(&map, path[1])->isBeWalkable = false;
   guard.move(&guard, path[0]);
