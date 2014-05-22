@@ -1,4 +1,4 @@
-#include <time.h>   /* only refer: (rand)*/
+#include <time.h>   /* only refer: (time)*/
 #include <stdlib.h> /* only refer: (malloc, free) */
 #include <stdbool.h>
 #include <stdint.h>
