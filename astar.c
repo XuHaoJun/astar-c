@@ -510,6 +510,8 @@ int main() {
   guard.move(&guard, path[1]);
   map.gridth(&map, path[2])->isBeWalkable = true;
   guard.move(&guard, path[2]);
+  map.gridth(&map, path[1])->isBeWalkable = false;
   guard.move(&guard, path[3]);
+  map.gridth(&map, path[1])->isBeWalkable = true;
   return 0;
 }
