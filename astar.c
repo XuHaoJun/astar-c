@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-// https://stackoverflow.com/questions/822323/how-to-generate-a-random-number-in-c/14598879#14598879
 int32_t randNum(int32_t minNum, int32_t maxNum) {
   int32_t result = 0, lowNum = 0, hiNum = 0;
   if (minNum < maxNum) {
@@ -27,6 +26,7 @@ typedef struct Point {
 typedef struct Grid {
   Point position;
   bool isBeWalkable;
+  bool hasBeing;
 } Grid;
 
 Grid *newGrid(Point pos, bool isBeWalkable) {
@@ -34,6 +34,7 @@ Grid *newGrid(Point pos, bool isBeWalkable) {
   grid = (Grid *)malloc(sizeof(Grid));
   grid->position = pos;
   grid->isBeWalkable = isBeWalkable;
+  grid->hasBeing = false;
   return grid;
 }
 
@@ -51,6 +52,7 @@ typedef struct Map {
   int32_t width;
   int32_t height;
   Grid **grids;
+  void (*printMap)(struct Map *map);
   bool (*inMapP)(struct Map *map, Point pos);
   Grid *(*gridth)(struct Map *map, Point pos);
   GridList *(*nearbyGrids)(struct Map *map, Point pos);
@@ -197,7 +199,6 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
   AstarList *openList, *closeList;
   AstarNode *srcNode = newAstarNode(srcPos, 0, 0, NULL);
   AstarNode *minNode;
-  GridList *nbyGrids, *tmpGlist;
   int32_t f, g, h;
   Point pos;
   AstarNode *foundNode;
@@ -205,44 +206,42 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
   closeList = (AstarList *)malloc(sizeof(AstarList));
   closeList->next = NULL;
   closeList->node = NULL;
-  tmpGlist = NULL;
   minNode = NULL;
   f = 0;
   g = 0;
   h = 0;
   do {
-    printf("openList %d, %d\n", openList->node->pos.x, openList->node->pos.y);
     minNode = minFvalAstarNode(openList);
-    printf("minNode pos %d, %d, f: %d\n", minNode->pos.x, minNode->pos.y,
-           minNode->f);
     closeList = appendAstarNode(closeList, minNode);
-    printf("wiwi look here 1 \n");
-    /* clearAstarList(openList); */
     openList->node = NULL;
     openList->next = NULL;
+    GridList *nbyGrids, *newNbyGrids, *tmpGlist, *tmpNewGlist, *lastGlist;
     nbyGrids = map->nearbyGrids(map, minNode->pos);
     tmpGlist = nbyGrids;
-    GridList *prevGlist;
-    prevGlist = tmpGlist;
-    while (tmpGlist != NULL) {  // reject unneccessary grid
-      if ((findNodeByPos(closeList, tmpGlist->grid->position) ||
-           tmpGlist->grid->isBeWalkable == false) &&
-          tmpGlist == nbyGrids) {
-        nbyGrids = NULL;
-        break;
-      } else if (findNodeByPos(closeList, tmpGlist->grid->position) ||
-                 tmpGlist->grid->isBeWalkable == false) {
-        prevGlist->next = tmpGlist->next;
+    newNbyGrids = NULL;
+    tmpNewGlist = NULL;
+    lastGlist = NULL;
+    while (tmpGlist != NULL) {  // select neccessary grid
+      if (tmpGlist->grid->isBeWalkable &&
+          findNodeByPos(closeList, tmpGlist->grid->position) == false) {
+        if (tmpNewGlist == NULL) {
+          newNbyGrids = tmpGlist;
+          tmpNewGlist = tmpGlist;
+        } else {
+          lastGlist = tmpNewGlist;
+          tmpNewGlist->next = tmpGlist;
+          tmpNewGlist = tmpGlist;
+        }
       }
-      prevGlist = tmpGlist;
       tmpGlist = tmpGlist->next;
     }
-    printf("wiwi look here 2 \n");
-    if (nbyGrids == NULL || nbyGrids->next == NULL || nbyGrids->grid == NULL) {
+    if (lastGlist->next != NULL) {
+      lastGlist->next = NULL;
+    }
+    if (newNbyGrids == NULL || newNbyGrids->grid == NULL) {
       break;
     }
-    printf("wiwi look here 3 \n");
-    tmpGlist = nbyGrids;
+    tmpGlist = newNbyGrids;
     while (tmpGlist != NULL) {  // each nearbyGrids
       pos = tmpGlist->grid->position;
       g = astarG(pos, minNode);
@@ -261,14 +260,7 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
       // next nearbyGrid
       tmpGlist = tmpGlist->next;
     }
-    printf("equalPoint? %d\n", equalPoint(minNode->pos, destPos));
-    if (openList->node == NULL) {
-      printf("open list is NULL\n");
-    }
-    printf("Keep? %d\n",
-           !(equalPoint(minNode->pos, destPos) || openList->node == NULL));
   } while (!(equalPoint(minNode->pos, destPos) || openList->node == NULL));
-  printf("collect path\n");
   AstarNode *tmpNode = minNode;
   PathList *path = malloc(sizeof(PathList));
   PathList *tmpPath;
@@ -279,7 +271,6 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
     tmpPath = tmpPath->next;
     tmpNode = tmpNode->parenNode;
   };
-  printf("reversing path\n");
   path = reversePathList(path);
   path->pos = srcPos;
   return path;
@@ -290,6 +281,31 @@ Grid *gridth(Map *map, Point pos) {
     return &map->grids[pos.y][pos.x];
   } else {
     return NULL;
+  }
+}
+
+void printMap(Map *map) {
+  int32_t y, x;
+  for (y = 0; y < map->height; y++) {
+    if (y == 0) {
+      for (x = 0; x < map->width; x++) {
+        printf(" %d ", x);
+      }
+      printf("\n");
+    }
+    for (x = 0; x < map->width; x++) {
+      if (map->gridth(map, (Point) {x, y})->hasBeing) {
+        printf(" @ ");
+      } else if (map->gridth(map, (Point) {x, y})->isBeWalkable) {
+        printf(" . ");
+      } else {
+        printf(" # ");
+      }
+      if (x == (map->width - 1)) {
+        printf(" %d ", y);
+      }
+    }
+    printf("\n");
   }
 }
 
@@ -367,25 +383,25 @@ Map newMap(int32_t width, int32_t height) {
       grids[iy][ix].isBeWalkable = true;
     }
   }
-  return (Map) {width,  height,      grids,        inMapP,
-                gridth, nearbyGrids, astarFindPath};
+  return (Map) {width,  height, grids,       printMap,
+                inMapP, gridth, nearbyGrids, astarFindPath};
 };
 
 typedef struct Guard {
   char *name;
   Map *map;
   Point position;
-  bool (*move)(struct Guard *self, Point pos);
-  /* Grid* (*move)(struct Guard *self, Point pos); */
+  PathList *(*move)(struct Guard *self, Point pos);
   Map *(*joinMap)(struct Guard *self, Map *map);
 } Guard;
 
-Map *joinMap(Guard *self, Map *map) {
-  self->map = map;
+Map *joinMap(Guard *guard, Map *map) {
+  guard->map = map;
+  map->gridth(map, guard->position)->hasBeing = true;
   return map;
 }
 
-bool move(Guard *guard, Point destPos) {
+PathList *move(Guard *guard, Point destPos) {
   Map *curMap = guard->map;
   if (guard->map == NULL) {
     return false;
@@ -397,18 +413,21 @@ bool move(Guard *guard, Point destPos) {
     tmpPath = path;
     while (tmpPath) {
       curPos = tmpPath->pos;
+      curMap->gridth(curMap, guard->position)->hasBeing = false;
       guard->position = curPos;
+      curMap->gridth(curMap, curPos)->hasBeing = true;
       printf("%s move to ", guard->name);
-      printf("x: %d, y: %d\n", curPos.x, curPos.y);
+      printf("(%d, %d)\n", curPos.x, curPos.y);
+      curMap->printMap(curMap);
       tmpPath = tmpPath->next;
     }
-    return true;
+    return path;
   } else {
     printf("%s can't move to %d, %d\n", guard->name, destPos.x, destPos.y);
     free(path);
-    return false;
+    return NULL;
   }
-  return false;
+  return NULL;
 }
 
 Guard newGuard(char *name, Point position) {
@@ -422,14 +441,14 @@ typedef struct RectWall {
 } RectWall;
 
 int main() {
-  srand((unsigned)time(NULL));
-  int i, j = 0;
+  Point path[] = {{0, 0}, {10, 10}, {5, 5}, {15, 15}};
   int32_t mapWidth = 20;
   int32_t mapHeight = 20;
   Map map = newMap(mapWidth, mapHeight);
-  Guard guard = newGuard("wiwi", (Point) {0, 0});
+  Guard guard = newGuard("kiki", (Point) {0, 0});
   guard.joinMap(&guard, &map);
 
+  int i, j, k = 0;
   int32_t rectWallCount = randNum(3, 5);
   printf("rectWallCount: %d\n", rectWallCount);
   RectWall *rectWalls = malloc(sizeof(RectWall) * rectWallCount);
@@ -443,6 +462,21 @@ int main() {
     rectWalls[i].area[3].x = rectWalls[i].area[0].x;
     rectWalls[i].area[3].y = rectWalls[i].area[0].y + 1;
     for (j = 0; j < 4; j++) {
+      for (k = 0; k < 4; k++) {
+        while (equalPoint(path[k], rectWalls[i].area[j]) ||
+               map.inMapP(&map, rectWalls[i].area[j]) == false) {
+          rectWalls[i].area[0].x = randNum(i + randNum(0, k), mapWidth - 1);
+          rectWalls[i].area[0].y = randNum(i + randNum(0, j), mapHeight - 1);
+          rectWalls[i].area[1].x = rectWalls[i].area[0].x + 1;
+          rectWalls[i].area[1].y = rectWalls[i].area[0].y;
+          rectWalls[i].area[2].x = rectWalls[i].area[0].x + 1;
+          rectWalls[i].area[2].y = rectWalls[i].area[0].y + 1;
+          rectWalls[i].area[3].x = rectWalls[i].area[0].x;
+          rectWalls[i].area[3].y = rectWalls[i].area[0].y + 1;
+        }
+      }
+    }
+    for (j = 0; j < 4; j++) {
       if (map.gridth(&map, rectWalls[i].area[j]) != NULL) {
         printf("rect wall: %d, %d\n",
                map.gridth(&map, rectWalls[i].area[j])->position.x,
@@ -452,39 +486,13 @@ int main() {
     }
   }
   free(rectWalls);
-
-  printf("start first astar path finding\n");
-  PathList *plist = map.astarFindPath(&map, (Point) {1, 1}, (Point) {3, 3});
-  if (plist != NULL) {
-    PathList *tmpPlist = plist;
-    while (tmpPlist) {
-      printf("Path %d, %d\n", tmpPlist->pos.x, tmpPlist->pos.y);
-      tmpPlist = tmpPlist->next;
-    }
-  } else {
-    printf("plist is NULL\n");
-  }
+  map.printMap(&map);
 
   printf("wiwi start moving\n");
-  Point path[] = {{10, 10}, {5, 5}, {15, 15}};
-  map.gridth(&map, path[1])->isBeWalkable = false;
-  guard.move(&guard, path[0]);
-  map.gridth(&map, path[0])->isBeWalkable = false;
-  map.gridth(&map, path[1])->isBeWalkable = true;
-  guard.move(&guard, path[1]);
-  map.gridth(&map, path[1])->isBeWalkable = false;
-  guard.move(&guard, path[2]);
   map.gridth(&map, path[2])->isBeWalkable = false;
-
-  GridList *grids = map.nearbyGrids(&map, (Point) {9, 9});
-  GridList *cur = grids;
-  int size = 0;
-  while (cur != NULL) {
-    printf("nearbyGrids %d, %d\n", cur->grid->position.x,
-           cur->grid->position.y);
-    size++;
-    cur = cur->next;
-  }
-  printf("nb grids size %d\n", size);
+  guard.move(&guard, path[1]);
+  map.gridth(&map, path[2])->isBeWalkable = true;
+  guard.move(&guard, path[2]);
+  guard.move(&guard, path[3]);
   return 0;
 }
