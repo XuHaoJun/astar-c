@@ -1,5 +1,5 @@
 * Introduction
-Simple astar example writen by c.
+Simple astar path finding example writen by c.
 * ScreenShot
 [[./img/1.png]]
 [[./img/2.png]]
