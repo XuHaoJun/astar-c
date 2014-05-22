@@ -123,6 +123,23 @@ AstarList *appendAstarNode(AstarList *alist, AstarNode *anode) {
   return alist;
 }
 
+AstarList *unshiftAstarNode(AstarList *alist, AstarNode *anode) {
+  if (alist == NULL) {
+    alist = newAstarList(anode);
+    return alist;
+  } else if (alist->node == NULL) {
+    alist->node = anode;
+    return alist;
+  } else if (alist->next == NULL) {
+    alist->next = newAstarList(anode);
+    return alist;
+  } else {
+    AstarList *newAlist = newAstarList(anode);
+    newAlist->next = alist;
+    return newAlist;
+  }
+}
+
 AstarNode *minFvalAstarNode(AstarList *alist) {
   if (alist == NULL || alist->node == NULL) {
     return NULL;
@@ -212,7 +229,7 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
   h = 0;
   do {
     minNode = minFvalAstarNode(openList);
-    closeList = appendAstarNode(closeList, minNode);
+    closeList = unshiftAstarNode(closeList, minNode);
     openList->node = NULL;
     openList->next = NULL;
     GridList *nbyGrids, *newNbyGrids, *tmpGlist, *tmpNewGlist, *lastGlist;
@@ -255,7 +272,7 @@ PathList *astarFindPath(Map *map, Point srcPos, Point destPos) {
           foundNode->f = g + h;
         }
       } else {
-        openList = appendAstarNode(openList, newAstarNode(pos, f, g, minNode));
+        openList = unshiftAstarNode(openList, newAstarNode(pos, f, g, minNode));
       }
       // next nearbyGrid
       tmpGlist = tmpGlist->next;
