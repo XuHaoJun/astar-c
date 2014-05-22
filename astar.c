@@ -179,20 +179,15 @@ AstarNode *findNodeByPos(AstarList *alist, Point pos) {
   return NULL;
 }
 
-AstarList *clearAstarList(AstarList *alist) {
-  AstarList *tmp, *prev;
-  alist->node = NULL;
-  tmp = alist->next;
-  prev = NULL;
+void *freeAstarList(AstarList *alist) {
+  AstarList *tmp;
   while (tmp) {
-    prev = tmp;
-    tmp = tmp->next;
-    free(prev->node);
-    free(prev);
+    tmp = alist;
+    alist = alist->next;
+    free(tmp->node);
+    free(tmp);
   }
-  alist->node = NULL;
-  alist->next = NULL;
-  return alist;
+  return NULL;
 }
 
 PathList *reversePathList(PathList *plist) {
