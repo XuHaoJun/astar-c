@@ -464,7 +464,7 @@ int main() {
   int32_t rectWallCount = randNum(3, 5);
   printf("rectWallCount: %d\n", rectWallCount);
   RectWall *rectWalls = malloc(sizeof(RectWall) * rectWallCount);
-  for (i = 0; i < rectWallCount; i++) {
+  for (i = 0; i < rectWallCount; i++) { // each rectWalls
     rectWalls[i].area[0].x = randNum(i, mapWidth - 1);
     rectWalls[i].area[0].y = randNum(i, mapHeight - 1);
     rectWalls[i].area[1].x = rectWalls[i].area[0].x + 1;
@@ -473,8 +473,8 @@ int main() {
     rectWalls[i].area[2].y = rectWalls[i].area[0].y + 1;
     rectWalls[i].area[3].x = rectWalls[i].area[0].x;
     rectWalls[i].area[3].y = rectWalls[i].area[0].y + 1;
-    for (j = 0; j < 4; j++) {
-      for (k = 0; k < 4; k++) {
+    for (j = 0; j < 4; j++) { // each area
+      for (k = 0; k < 4; k++) { // each path
         while (equalPoint(path[k], rectWalls[i].area[j]) ||
                map.inMapP(&map, rectWalls[i].area[j]) == false) {
           rectWalls[i].area[0].x = randNum(i + randNum(0, k), mapWidth - 1);
@@ -488,7 +488,7 @@ int main() {
         }
       }
     }
-    for (j = 0; j < 4; j++) {
+    for (j = 0; j < 4; j++) { // each area
       if (map.gridth(&map, rectWalls[i].area[j]) != NULL) {
         printf("rect wall: %d, %d\n",
                map.gridth(&map, rectWalls[i].area[j])->position.x,
