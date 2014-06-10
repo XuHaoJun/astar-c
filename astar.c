@@ -453,7 +453,8 @@ typedef struct RectWall {
 } RectWall;
 
 int main() {
-  Point path[] = {{0, 0}, {10, 10}, {5, 5}, {15, 15}};
+  Point path[] = {{0, 0}, {10, 10}, {5, 5}, {15, 15}, {19, 19}};
+  int32_t pathSize = sizeof(path)/sizeof(Point);
   int32_t mapWidth = 20;
   int32_t mapHeight = 20;
   Map map = newMap(mapWidth, mapHeight);
@@ -474,7 +475,7 @@ int main() {
     rectWalls[i].area[3].x = rectWalls[i].area[0].x;
     rectWalls[i].area[3].y = rectWalls[i].area[0].y + 1;
     for (j = 0; j < 4; j++) { // each area
-      for (k = 0; k < 4; k++) { // each path
+      for (k = 0; k < pathSize; k++) { // each path
         while (equalPoint(path[k], rectWalls[i].area[j]) ||
                map.inMapP(&map, rectWalls[i].area[j]) == false) {
           rectWalls[i].area[0].x = randNum(i + randNum(0, k), mapWidth - 1);
@@ -508,5 +509,6 @@ int main() {
   map.gridth(&map, path[1])->isBeWalkable = false;
   guard.move(&guard, path[3]);
   map.gridth(&map, path[1])->isBeWalkable = true;
+  guard.move(&guard, path[4]);
   return 0;
 }
