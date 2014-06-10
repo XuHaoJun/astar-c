@@ -522,13 +522,13 @@ int main() {
     rectWalls[i].area[3].x = rectWalls[i].area[0].x;
     rectWalls[i].area[3].y = rectWalls[i].area[0].y + 1;
   }
-  //for (i = 0; i < rectWallCount; i++) { // each rectWalls
-    //for (j = 0; j < 4; j++) { // each area
+
   i = 0;
   while ((rectWallsInMap(rectWalls, rectWallCount, &map) == false ||
         overlapRectWalls(rectWalls, rectWallCount) ||
         overlapRectWallsAndPath(rectWalls, rectWallCount, &path[0], pathSize)) &&
       i < rectWallCount) {
+    // TODO Should find wrong specific rectWall and rand it.
     rectWalls[i].area[0].x = randNum(i+randNum(0,i), mapWidth - 1);
     rectWalls[i].area[0].y = randNum(i, mapHeight - 1);
     rectWalls[i].area[1].x = rectWalls[i].area[0].x + 1;
@@ -542,8 +542,7 @@ int main() {
       i = 0;
     }
   }
-  //}
-  //}
+
   for (i = 0; i < rectWallCount; i++) { // each rectWalls
     for (j = 0; j < 4; j++) { // each area
       if (map.gridth(&map, rectWalls[i].area[j]) != NULL) {
