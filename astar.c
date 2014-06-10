@@ -452,6 +452,53 @@ typedef struct RectWall {
   Point area[4];
 } RectWall;
 
+bool overlapRectWalls(RectWall *rs, int32_t rectSize) {
+  int i,j,k,l = 0;
+  for (i = 0; i < rectSize; i++) {
+    for(j = 0; j<4; j++) {
+      for (k = rectSize-1; k >= 0; k--) {
+        for(l = 0; l<4; l++) {
+          if (i == k) {
+            continue;
+          }
+          if (equalPoint(rs[i].area[j], rs[k].area[l]) ||
+              equalPoint(rs[i].area[l], rs[k].area[j])) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool overlapRectWallsAndPath(RectWall *rs, int32_t rectSize, Point *path, int32_t pathSize) {
+  int i,j,k = 0;
+  for (i = 0; i < rectSize; i++) {
+    for(j = 0; j<4; j++) {
+      for (k = 0; k < pathSize; k++) {
+        if (equalPoint(rs[i].area[j], path[k])) {
+            return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool rectWallsInMap(RectWall *rs, int32_t rectSize, Map *map) {
+  int i,j = 0;
+  for (i = 0; i < rectSize; i++) {
+    for (j=0; j<4; j++) {
+      if (map->inMapP(map, rs[i].area[j]) == false) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+
 int main() {
   Point path[] = {{0, 0}, {10, 10}, {5, 5}, {15, 15}, {19, 19}};
   int32_t pathSize = sizeof(path)/sizeof(Point);
@@ -461,12 +508,28 @@ int main() {
   Guard guard = newGuard("wiwi", (Point) {0, 0});
   guard.joinMap(&guard, &map);
 
-  int i, j, k = 0;
+  int i, j = 0;
   int32_t rectWallCount = randNum(3, 5);
   printf("rectWallCount: %d\n", rectWallCount);
   RectWall *rectWalls = malloc(sizeof(RectWall) * rectWallCount);
   for (i = 0; i < rectWallCount; i++) { // each rectWalls
     rectWalls[i].area[0].x = randNum(i, mapWidth - 1);
+    rectWalls[i].area[0].y = randNum(i+1, mapHeight - 1);
+    rectWalls[i].area[1].x = rectWalls[i].area[0].x + 1;
+    rectWalls[i].area[1].y = rectWalls[i].area[0].y;
+    rectWalls[i].area[2].x = rectWalls[i].area[0].x + 1;
+    rectWalls[i].area[2].y = rectWalls[i].area[0].y + 1;
+    rectWalls[i].area[3].x = rectWalls[i].area[0].x;
+    rectWalls[i].area[3].y = rectWalls[i].area[0].y + 1;
+  }
+  //for (i = 0; i < rectWallCount; i++) { // each rectWalls
+    //for (j = 0; j < 4; j++) { // each area
+  i = 0;
+  while ((rectWallsInMap(rectWalls, rectWallCount, &map) == false ||
+        overlapRectWalls(rectWalls, rectWallCount) ||
+        overlapRectWallsAndPath(rectWalls, rectWallCount, &path[0], pathSize)) &&
+      i < rectWallCount) {
+    rectWalls[i].area[0].x = randNum(i+randNum(0,i), mapWidth - 1);
     rectWalls[i].area[0].y = randNum(i, mapHeight - 1);
     rectWalls[i].area[1].x = rectWalls[i].area[0].x + 1;
     rectWalls[i].area[1].y = rectWalls[i].area[0].y;
@@ -474,32 +537,24 @@ int main() {
     rectWalls[i].area[2].y = rectWalls[i].area[0].y + 1;
     rectWalls[i].area[3].x = rectWalls[i].area[0].x;
     rectWalls[i].area[3].y = rectWalls[i].area[0].y + 1;
-    for (j = 0; j < 4; j++) { // each area
-      for (k = 0; k < pathSize; k++) { // each path
-        while (equalPoint(path[k], rectWalls[i].area[j]) ||
-               map.inMapP(&map, rectWalls[i].area[j]) == false) {
-          rectWalls[i].area[0].x = randNum(i + randNum(0, k), mapWidth - 1);
-          rectWalls[i].area[0].y = randNum(i + randNum(0, j), mapHeight - 1);
-          rectWalls[i].area[1].x = rectWalls[i].area[0].x + 1;
-          rectWalls[i].area[1].y = rectWalls[i].area[0].y;
-          rectWalls[i].area[2].x = rectWalls[i].area[0].x + 1;
-          rectWalls[i].area[2].y = rectWalls[i].area[0].y + 1;
-          rectWalls[i].area[3].x = rectWalls[i].area[0].x;
-          rectWalls[i].area[3].y = rectWalls[i].area[0].y + 1;
-        }
-      }
+    i++;
+    if (i == rectWallCount) {
+      i = 0;
     }
+  }
+  //}
+  //}
+  for (i = 0; i < rectWallCount; i++) { // each rectWalls
     for (j = 0; j < 4; j++) { // each area
       if (map.gridth(&map, rectWalls[i].area[j]) != NULL) {
         printf("rect wall: %d, %d\n",
-               map.gridth(&map, rectWalls[i].area[j])->position.x,
-               map.gridth(&map, rectWalls[i].area[j])->position.y);
+            map.gridth(&map, rectWalls[i].area[j])->position.x,
+            map.gridth(&map, rectWalls[i].area[j])->position.y);
         map.gridth(&map, rectWalls[i].area[j])->isBeWalkable = false;
       }
     }
   }
   free(rectWalls);
-  map.printMap(&map);
 
   printf("%s start moving\n",guard.name);
   map.gridth(&map, path[2])->isBeWalkable = false;
