@@ -447,7 +447,7 @@ Guard newGuard(char *name, Point position) {
 }
 
 typedef struct RectWall {
-  // fixed use 4 point
+  // fixed 4 point
   // lazy use dynamic array for dynamic size
   Point area[4];
 } RectWall;
@@ -458,7 +458,7 @@ int main() {
   int32_t mapWidth = 20;
   int32_t mapHeight = 20;
   Map map = newMap(mapWidth, mapHeight);
-  Guard guard = newGuard("kiki", (Point) {0, 0});
+  Guard guard = newGuard("wiwi", (Point) {0, 0});
   guard.joinMap(&guard, &map);
 
   int i, j, k = 0;
@@ -501,7 +501,7 @@ int main() {
   free(rectWalls);
   map.printMap(&map);
 
-  printf("wiwi start moving\n");
+  printf("%s start moving\n",guard.name);
   map.gridth(&map, path[2])->isBeWalkable = false;
   guard.move(&guard, path[1]);
   map.gridth(&map, path[2])->isBeWalkable = true;
