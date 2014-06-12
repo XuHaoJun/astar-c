@@ -180,7 +180,7 @@ AstarNode *findNodeByPos(AstarList *alist, Point pos) {
 }
 
 void *freeAstarList(AstarList *alist) {
-  AstarList *tmp;
+  AstarList *tmp = alist;
   while (tmp) {
     tmp = alist;
     alist = alist->next;
